@@ -5,7 +5,7 @@ import ScoreScreen from './components/ScoreScreen';
 import HistoryScreen from './components/HistoryScreen';
 import { GoogleGenAI, Type } from "@google/genai";
 import { KnowledgeTopic, emtKnowledgeBase } from './emt-knowledge-base';
-import { BackIcon, CircleCheckIcon, MoonIcon, SunIcon } from './components/icons';
+import { BackIcon, CircleCheckIcon, LightbulbIcon, MoonIcon, SunIcon } from './components/icons';
 
 type QuizState = 'not-started' | 'in-progress' | 'completed' | 'history' | 'reviewing';
 type Theme = 'light' | 'dark';
@@ -28,6 +28,7 @@ const App: React.FC = () => {
   const [quizToReview, setQuizToReview] = useState<QuizResult | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeTopic[]>(emtKnowledgeBase);
   const [theme, setTheme] = useState<Theme>('dark');
+  
 
   useEffect(() => {
     // Theme initialization
@@ -104,7 +105,7 @@ const App: React.FC = () => {
       localStorage.setItem('emtCustomTopics', JSON.stringify(customTopics));
   };
   
-  const generateQuizQuestions = useCallback(async (questionType: QuestionType, difficulty: 'Easy' | 'Hard', numQuestions: number, selectedTopics: string[], previousQuestions: Question[] = []): Promise<Question[]> => {
+  const generateQuizQuestions = useCallback(async (questionType: 'Knowledge-Based' | 'Scenario-Based', difficulty: 'Easy' | 'Hard', numQuestions: number, selectedTopics: string[], previousQuestions: Question[] = []): Promise<Question[]> => {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
     const schema = {
@@ -206,11 +207,7 @@ const App: React.FC = () => {
     }));
   }, [knowledgeBase]);
 
-  const handleStartQuiz = useCallback(async (questionType: QuestionType, difficulty: 'Easy' | 'Hard', numQuestions: number, selectedTopics: string[], previousQuestions: Question[] = []) => {
-    setIsLoading(true);
-    setError(null);
-    setCurrentQuizConfig({ difficulty, questionType, topics: selectedTopics });
-    try {
+  const handleStartQuizFlow = useCallback(async (questionType: 'Knowledge-Based' | 'Scenario-Based', difficulty: 'Easy' | 'Hard', numQuestions: number, selectedTopics: string[], previousQuestions: Question[] = []) => {
       if (!selectedTopics || selectedTopics.length === 0) {
         throw new Error("Please select at least one topic to start the quiz.");
       }
@@ -224,16 +221,25 @@ const App: React.FC = () => {
       setUserAnswers(new Array(generatedQuestions.length).fill(null));
       setScore(0);
       setQuizState('in-progress');
+  }, [generateQuizQuestions]);
+
+  const handleStart = useCallback(async (questionType: QuestionType, difficulty: 'Easy' | 'Hard', numQuestions: number, selectedTopics: string[]) => {
+    setIsLoading(true);
+    setError(null);
+    setCurrentQuizConfig({ difficulty, questionType, topics: selectedTopics });
+
+    try {
+      await handleStartQuizFlow(questionType, difficulty, numQuestions, selectedTopics);
     } catch (err) {
       console.error(err);
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
-      setError(`Failed to generate quiz. ${errorMessage}`);
-      setQuizState('not-started'); // Go back to start screen on error
+      setError(`Failed to start. ${errorMessage}`);
+      setQuizState('not-started');
     } finally {
       setIsLoading(false);
     }
-  }, [generateQuizQuestions]);
-
+  }, [handleStartQuizFlow]);
+  
   const handleAnswerSelect = (questionIndex: number, answer: string) => {
     const newAnswers = [...userAnswers];
     newAnswers[questionIndex] = answer;
@@ -278,12 +284,11 @@ const App: React.FC = () => {
   
   const handleRegenerateQuiz = useCallback(async () => {
     if (currentQuizConfig && questions.length > 0) {
-      await handleStartQuiz(currentQuizConfig.questionType, currentQuizConfig.difficulty, questions.length, currentQuizConfig.topics, questions);
+      await handleStartQuizFlow(currentQuizConfig.questionType, currentQuizConfig.difficulty, questions.length, currentQuizConfig.topics, questions);
     } else {
-      // Fallback if something is wrong
       handleRestartQuiz();
     }
-  }, [currentQuizConfig, questions, handleStartQuiz]);
+  }, [currentQuizConfig, questions, handleStartQuizFlow]);
 
   const handleRestartQuiz = () => {
     setQuizState('not-started');
@@ -309,14 +314,10 @@ const App: React.FC = () => {
   const handleClearHistory = () => {
     if (window.confirm("Are you sure you want to clear all quiz history and custom topics? This action cannot be undone.")) {
       try {
-        // Clear quiz history
         localStorage.removeItem('emtQuizHistory');
         setQuizHistory([]);
-  
-        // Clear custom topics
         localStorage.removeItem('emtCustomTopics');
-        setKnowledgeBase(emtKnowledgeBase); // Reset knowledge base to the original one
-  
+        setKnowledgeBase(emtKnowledgeBase);
       } catch (error) {
         console.error("Failed to clear app data:", error);
         setError("Could not clear history and topics. Please try again.");
@@ -433,7 +434,7 @@ const App: React.FC = () => {
       case 'not-started':
       default:
         return <StartScreen 
-          onStart={handleStartQuiz} 
+          onStart={handleStart} 
           isLoading={isLoading} 
           error={error} 
           knowledgeBase={knowledgeBase}
@@ -445,7 +446,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 selection:bg-cyan-500/50 selection:text-white transition-colors duration-300">
+    <div className="app-background min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 selection:bg-cyan-500/50 selection:text-white transition-colors duration-300">
       <main className="w-full flex-grow flex items-center justify-center">
         <div key={quizState} className="animate-page-enter">
           {renderQuizContent()}
