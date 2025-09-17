@@ -16,9 +16,12 @@ interface StartScreenProps {
   onViewHistory: () => void;
   onAddTopic: (topic: KnowledgeTopic) => void;
   onDeleteTopic: (topicName: string) => void;
+  resumableQuiz: { config: { difficulty: string; questionType: string; topics: string[] }, questionCount: number } | null;
+  onResume: () => void;
+  onDiscard: () => void;
 }
 
-const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, knowledgeBase, onViewHistory, onAddTopic, onDeleteTopic }) => {
+const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, knowledgeBase, onViewHistory, onAddTopic, onDeleteTopic, resumableQuiz, onResume, onDiscard }) => {
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -136,9 +139,32 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
 
   return (
     <div className="bg-white dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl max-w-5xl w-full transition-all duration-500 p-8 stagger-children border border-black/5 dark:border-white/5">
+      {resumableQuiz && (
+        <div className="mb-8 p-4 bg-blue-100 dark:bg-blue-900/50 border border-blue-300 dark:border-blue-700 rounded-lg text-center animate-fadeIn">
+          <h2 className="text-xl font-bold text-blue-800 dark:text-blue-200">Welcome Back!</h2>
+          <p className="text-blue-700 dark:text-blue-300 mt-1 mb-4">
+            You have an unfinished {resumableQuiz.config.difficulty} {resumableQuiz.config.questionType} quiz with {resumableQuiz.questionCount} questions.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <button
+              onClick={onResume}
+              className="px-6 py-2 bg-teal-600 text-white font-bold rounded-lg shadow-md hover:bg-teal-700 transform hover:scale-105 active:scale-95 transition-all"
+            >
+              Resume Quiz
+            </button>
+            <button
+              onClick={onDiscard}
+              className="px-6 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-semibold rounded-lg shadow-sm transition-all active:scale-95"
+            >
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="text-center">
-        <LogoIcon className="w-24 h-24 mx-auto mb-4 text-cyan-400" style={{ animationDelay: '100ms' }} />
-        <h1 className="text-4xl md:text-5xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500" style={{ animationDelay: '200ms' }}>
+        <LogoIcon className="w-24 h-24 mx-auto mb-4 text-teal-400" style={{ animationDelay: '100ms' }} />
+        <h1 className="text-4xl md:text-5xl font-bold mb-3 text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-green-600" style={{ animationDelay: '200ms' }}>
           EMT Quiz Platform
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md mx-auto" style={{ animationDelay: '300ms' }}>
@@ -148,7 +174,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
 
       {isLoading ? (
         <div className="h-96 flex flex-col items-center justify-center">
-          <SpinnerIcon className="h-12 w-12 text-cyan-400 animate-spin" />
+          <SpinnerIcon className="h-12 w-12 text-teal-400 animate-spin" />
           <p className="mt-4 text-gray-700 dark:text-gray-300">Generating your quiz with Gemini...</p>
         </div>
       ) : (
@@ -169,7 +195,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
                  <button
                     onClick={triggerFileSelect}
                     disabled={isProcessingFile}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold bg-gray-200 hover:bg-gray-300 text-cyan-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-cyan-300 rounded-md transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold bg-gray-200 hover:bg-gray-300 text-teal-600 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-teal-300 rounded-md transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
                     {isProcessingFile ? ( <SpinnerIcon className="h-4 w-4 animate-spin" /> ) : ( <UploadIcon className="h-4 w-4" /> )}
                     {isProcessingFile ? 'Processing...' : 'Add Custom'}
@@ -182,7 +208,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
                   placeholder="Search topics..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-200 focus:ring-cyan-500 focus:border-cyan-500"
+                  className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-200 focus:ring-teal-500 focus:border-teal-500"
                   aria-label="Search for topics"
                 />
               </div>
@@ -195,7 +221,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
                           type="checkbox"
                           checked={areAllFilteredSelected}
                           onChange={handleSelectAllToggle}
-                          className="w-4 h-4 text-cyan-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500 rounded focus:ring-cyan-500"
+                          className="w-4 h-4 text-teal-600 bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-500 rounded focus:ring-teal-500"
                           aria-label="Select all visible topics"
                           disabled={filteredKnowledgeBase.length === 0}
                         />
@@ -208,9 +234,9 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
                       filteredKnowledgeBase.map(kb => {
                         const isSelected = selectedTopics.includes(kb.topic);
                         return (
-                          <tr key={kb.topic} onClick={() => handleTopicToggle(kb.topic)} className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-150 cursor-pointer ${isSelected ? 'bg-cyan-500/10 dark:bg-cyan-500/20' : ''}`} aria-selected={isSelected}>
+                          <tr key={kb.topic} onClick={() => handleTopicToggle(kb.topic)} className={`border-t border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors duration-150 cursor-pointer ${isSelected ? 'bg-teal-500/10 dark:bg-teal-500/20' : ''}`} aria-selected={isSelected}>
                             <td className="px-4 py-3 text-center">
-                              <input type="checkbox" checked={isSelected} onChange={() => handleTopicToggle(kb.topic)} onClick={(e) => e.stopPropagation()} className="w-4 h-4 text-cyan-600 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-500 rounded focus:ring-cyan-500" aria-label={`Select topic ${kb.topic}`} />
+                              <input type="checkbox" checked={isSelected} onChange={() => handleTopicToggle(kb.topic)} onClick={(e) => e.stopPropagation()} className="w-4 h-4 text-teal-600 bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-500 rounded focus:ring-teal-500" aria-label={`Select topic ${kb.topic}`} />
                             </td>
                             <td className="px-4 py-3 text-gray-800 dark:text-gray-300">
                                <div className="flex items-center justify-between gap-2">
@@ -241,14 +267,14 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
               <div>
                 <h2 className="text-xl font-semibold mb-3 text-gray-800 dark:text-gray-200">Quiz Mode</h2>
                 <div className="space-y-3">
-                    <button onClick={() => setQuestionType('Knowledge-Based')} className={`w-full p-4 flex items-center gap-4 rounded-lg shadow-md transition-all duration-200 border-2 active:scale-95 text-left ${ questionType === 'Knowledge-Based' ? 'bg-blue-600 border-blue-500 ring-2 ring-blue-400 text-white' : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-700 dark:text-gray-200' }`}>
+                    <button onClick={() => setQuestionType('Knowledge-Based')} className={`w-full p-4 flex items-center gap-4 rounded-lg shadow-md transition-all duration-200 border-2 active:scale-95 text-left ${ questionType === 'Knowledge-Based' ? 'bg-teal-600 border-teal-500 ring-2 ring-teal-400 text-white' : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-700 dark:text-gray-200' }`}>
                       <BookOpenIcon className="h-8 w-8 flex-shrink-0" />
                       <div>
                         <h3 className="font-bold">Knowledge Quiz</h3>
                         <p className="text-sm opacity-90">Test foundational definitions and facts.</p>
                       </div>
                     </button>
-                    <button onClick={() => setQuestionType('Scenario-Based')} className={`w-full p-4 flex items-center gap-4 rounded-lg shadow-md transition-all duration-200 border-2 active:scale-95 text-left ${ questionType === 'Scenario-Based' ? 'bg-blue-600 border-blue-500 ring-2 ring-blue-400 text-white' : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-700 dark:text-gray-200' }`}>
+                    <button onClick={() => setQuestionType('Scenario-Based')} className={`w-full p-4 flex items-center gap-4 rounded-lg shadow-md transition-all duration-200 border-2 active:scale-95 text-left ${ questionType === 'Scenario-Based' ? 'bg-teal-600 border-teal-500 ring-2 ring-teal-400 text-white' : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-700 dark:text-gray-200' }`}>
                       <ClipboardListIcon className="h-8 w-8 flex-shrink-0" />
                       <div>
                         <h3 className="font-bold">Scenario Quiz</h3>
@@ -265,7 +291,7 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
                     <h3 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Number of Questions</h3>
                     <div className="flex justify-center flex-wrap gap-2">
                       {questionCounts.map(count => (
-                        <button key={count} onClick={() => setNumQuestions(count)} className={`px-4 py-1.5 font-bold rounded-md shadow-sm transition-all duration-200 border-2 active:scale-95 flex-grow ${ numQuestions === count ? 'bg-cyan-500 border-cyan-400 ring-2 ring-cyan-400 text-white' : 'bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-700 dark:text-gray-200' }`}>
+                        <button key={count} onClick={() => setNumQuestions(count)} className={`px-4 py-1.5 font-bold rounded-md shadow-sm transition-all duration-200 border-2 active:scale-95 flex-grow ${ numQuestions === count ? 'bg-teal-500 border-teal-400 ring-2 ring-teal-400 text-white' : 'bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-700 dark:text-gray-200' }`}>
                             {count}
                           </button>
                       ))}
@@ -284,16 +310,16 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, isLoading, error, kn
           </div>
           
           <div className="w-full mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row-reverse items-center gap-4" style={{ animationDelay: '600ms' }}>
-            <button onClick={handleStart} disabled={isStartDisabled} className="w-full sm:w-auto px-10 py-4 bg-cyan-600 text-white font-bold rounded-lg shadow-lg hover:bg-cyan-700 transform hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed" aria-label="Start the quiz with selected options">
+            <button onClick={handleStart} disabled={isStartDisabled} className="w-full sm:w-auto px-10 py-4 bg-teal-600 text-white font-bold rounded-lg shadow-lg hover:bg-teal-700 transform hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed" aria-label="Start the quiz with selected options">
               Start Quiz
             </button>
-            <button onClick={onViewHistory} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-gray-200 dark:bg-gray-700 text-cyan-600 dark:text-cyan-300 font-semibold rounded-lg shadow-md hover:bg-gray-300 dark:hover:bg-gray-600 transform hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out">
+            <button onClick={onViewHistory} className="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-gray-200 dark:bg-gray-700 text-teal-600 dark:text-teal-300 font-semibold rounded-lg shadow-md hover:bg-gray-300 dark:hover:bg-gray-600 transform hover:scale-105 active:scale-95 transition-all duration-300 ease-in-out">
               <HistoryIcon className="h-5 w-5 mr-3" />
               View Quiz History
             </button>
              {selectedTopics.length === 0 && (
                 <div className="flex-grow flex items-center justify-center gap-2 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700/50 text-yellow-800 dark:text-yellow-300 text-sm rounded-md p-3">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <svg xmlns="http://www.w.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.21 3.03-1.742 3.03H4.42c-1.532 0-2.492-1.696-1.742-3.03l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
                     </svg>
                     <span>Please select at least one topic to start.</span>

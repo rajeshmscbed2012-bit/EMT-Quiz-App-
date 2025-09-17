@@ -5,7 +5,7 @@ import ScoreScreen from './components/ScoreScreen';
 import HistoryScreen from './components/HistoryScreen';
 import { GoogleGenAI, Type } from "@google/genai";
 import { KnowledgeTopic, emtKnowledgeBase } from './emt-knowledge-base';
-import { BackIcon, CircleCheckIcon, LightbulbIcon, MoonIcon, SunIcon } from './components/icons';
+import { BackIcon, CircleCheckIcon, LightbulbIcon, MoonIcon, SunIcon, CheckIcon } from './components/icons';
 
 type QuizState = 'not-started' | 'in-progress' | 'completed' | 'history' | 'reviewing';
 type Theme = 'light' | 'dark';
@@ -14,6 +14,12 @@ interface QuizConfig {
   difficulty: 'Easy' | 'Hard';
   questionType: QuestionType;
   topics: string[];
+}
+
+interface ResumableQuiz {
+  questions: Question[];
+  userAnswers: (string | null)[];
+  config: QuizConfig;
 }
 
 const App: React.FC = () => {
@@ -28,6 +34,7 @@ const App: React.FC = () => {
   const [quizToReview, setQuizToReview] = useState<QuizResult | null>(null);
   const [knowledgeBase, setKnowledgeBase] = useState<KnowledgeTopic[]>(emtKnowledgeBase);
   const [theme, setTheme] = useState<Theme>('dark');
+  const [resumableQuiz, setResumableQuiz] = useState<ResumableQuiz | null>(null);
   
 
   useEffect(() => {
@@ -67,6 +74,15 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Failed to load custom topics:", error);
     }
+     try {
+      const savedQuiz = localStorage.getItem('emtQuizInProgress');
+      if (savedQuiz) {
+        setResumableQuiz(JSON.parse(savedQuiz));
+      }
+    } catch (error) {
+      console.error("Failed to load in-progress quiz:", error);
+      localStorage.removeItem('emtQuizInProgress');
+    }
   }, []);
 
   useEffect(() => {
@@ -81,6 +97,24 @@ const App: React.FC = () => {
     localStorage.setItem('emtQuizTheme', theme);
   }, [theme]);
   
+  useEffect(() => {
+    if (quizState === 'in-progress' && questions.length > 0 && currentQuizConfig) {
+      try {
+        const quizToSave = {
+          questions,
+          userAnswers,
+          config: currentQuizConfig,
+        };
+        localStorage.setItem('emtQuizInProgress', JSON.stringify(quizToSave));
+      } catch (error) {
+        console.error("Failed to save quiz progress:", error);
+      }
+    } else {
+      // Clear saved quiz if not in-progress (e.g., on completion, restart, etc.)
+      localStorage.removeItem('emtQuizInProgress');
+    }
+  }, [quizState, questions, userAnswers, currentQuizConfig]);
+
   const toggleTheme = () => {
     setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
   };
@@ -298,6 +332,23 @@ const App: React.FC = () => {
     setError(null);
     setCurrentQuizConfig(null);
   };
+  
+  const handleResumeQuiz = () => {
+    if (resumableQuiz) {
+      setQuestions(resumableQuiz.questions);
+      setUserAnswers(resumableQuiz.userAnswers);
+      setCurrentQuizConfig(resumableQuiz.config);
+      setQuizState('in-progress');
+      setResumableQuiz(null);
+    }
+  };
+  
+  const handleDiscardResumableQuiz = () => {
+    if (window.confirm("Are you sure you want to discard your saved quiz progress?")) {
+      setResumableQuiz(null);
+      localStorage.removeItem('emtQuizInProgress');
+    }
+  };
 
   const handleViewHistory = () => setQuizState('history');
   
@@ -328,17 +379,40 @@ const App: React.FC = () => {
   const renderQuizContent = () => {
     switch(quizState) {
       case 'in-progress':
-        const answeredCount = userAnswers.filter(a => a !== null).length;
-        const progress = questions.length > 0 ? (answeredCount / questions.length) * 100 : 0;
-        
         return (
           <div className="w-full max-w-4xl mx-auto p-4 md:p-8">
-            <h2 className="text-3xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            <h2 className="text-3xl font-bold text-center mb-6 text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-500">
               {currentQuizConfig?.difficulty} {currentQuizConfig?.questionType} Quiz
             </h2>
-             <p className="text-center text-gray-600 dark:text-gray-400 mb-6">{`Answered ${answeredCount} of ${questions.length}`}</p>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-6">
-              <div className="bg-cyan-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+
+            <div className="flex items-center w-full mb-8">
+              {questions.map((_, index) => {
+                const isAnswered = userAnswers[index] !== null;
+                const isLastItem = index === questions.length - 1;
+
+                return (
+                  <React.Fragment key={`progress-${index}`}>
+                    <div className="flex-shrink-0 flex flex-col items-center relative">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-sm transition-all duration-300 ${
+                          isAnswered
+                            ? 'bg-teal-500 border-teal-500 text-white'
+                            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 text-gray-600 dark:text-gray-300'
+                        }`}
+                      >
+                        {isAnswered ? <CheckIcon className="w-5 h-5" /> : <span>{index + 1}</span>}
+                      </div>
+                    </div>
+                    {!isLastItem && (
+                      <div
+                        className={`flex-1 h-1 transition-colors duration-300 ${
+                          isAnswered ? 'bg-teal-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`}
+                      ></div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
 
             <div className="mb-8 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-lg">
@@ -377,7 +451,7 @@ const App: React.FC = () => {
                         onClick={() => handleAnswerSelect(qIndex, option.text)}
                         className={`p-4 rounded-lg text-left transition-all duration-200 border-2 active:scale-95 ${
                           userAnswers[qIndex] === option.text
-                            ? 'bg-blue-600 border-blue-400 ring-2 ring-blue-400 text-white'
+                            ? 'bg-teal-600 border-teal-400 ring-2 ring-teal-400 text-white'
                             : 'bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 border-transparent text-gray-800 dark:text-gray-200'
                         }`}
                       >
@@ -441,12 +515,15 @@ const App: React.FC = () => {
           onViewHistory={handleViewHistory}
           onAddTopic={handleAddCustomTopic}
           onDeleteTopic={handleDeleteCustomTopic}
+          resumableQuiz={resumableQuiz ? { config: resumableQuiz.config, questionCount: resumableQuiz.questions.length } : null}
+          onResume={handleResumeQuiz}
+          onDiscard={handleDiscardResumableQuiz}
         />;
     }
   };
 
   return (
-    <div className="app-background min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 selection:bg-cyan-500/50 selection:text-white transition-colors duration-300">
+    <div className="app-background min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 flex flex-col items-center justify-center p-4 selection:bg-teal-500/50 selection:text-white transition-colors duration-300">
       <main className="w-full flex-grow flex items-center justify-center">
         <div key={quizState} className="animate-page-enter">
           {renderQuizContent()}

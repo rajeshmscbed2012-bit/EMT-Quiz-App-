@@ -37,7 +37,7 @@ const SimulationScreen: React.FC<SimulationScreenProps> = ({ messages, onSendMes
       {/* Header */}
       <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
         <div>
-            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-500">
+            <h2 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-green-500">
                 Clinical Simulation
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -53,7 +53,7 @@ const SimulationScreen: React.FC<SimulationScreenProps> = ({ messages, onSendMes
       <div className="flex-grow overflow-y-auto p-4 space-y-4">
         {messages.map((msg, index) => (
           <div key={index} className={`flex items-end gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-             {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex-shrink-0"></div>}
+             {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-green-500 flex-shrink-0"></div>}
             <div className={`max-w-prose p-3 rounded-lg ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'}`}>
               <p className="whitespace-pre-wrap">{msg.text}</p>
             </div>
@@ -61,9 +61,9 @@ const SimulationScreen: React.FC<SimulationScreenProps> = ({ messages, onSendMes
         ))}
         {isSending && messages[messages.length - 1]?.role === 'user' && (
           <div className="flex justify-start items-end gap-2">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex-shrink-0"></div>
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-green-500 flex-shrink-0"></div>
             <div className="max-w-prose p-3 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center gap-3">
-                <SpinnerIcon className="h-5 w-5 animate-spin text-cyan-500" />
+                <SpinnerIcon className="h-5 w-5 animate-spin text-teal-500" />
                 <span className="text-gray-500 dark:text-gray-400 italic">Simulator is thinking...</span>
             </div>
           </div>
@@ -80,11 +80,11 @@ const SimulationScreen: React.FC<SimulationScreenProps> = ({ messages, onSendMes
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Describe your next action..."
-            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-200 focus:ring-cyan-500 focus:border-cyan-500"
+            className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-200 focus:ring-teal-500 focus:border-teal-500"
             disabled={isSending}
             aria-label="Your next action"
           />
-          <button onClick={handleSend} disabled={isSending || !input.trim()} className="p-3 bg-cyan-600 text-white rounded-full hover:bg-cyan-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors active:scale-95" aria-label="Send message">
+          <button onClick={handleSend} disabled={isSending || !input.trim()} className="p-3 bg-teal-600 text-white rounded-full hover:bg-teal-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 transition-colors active:scale-95" aria-label="Send message">
             <SendIcon className="h-5 w-5" />
           </button>
         </div>
